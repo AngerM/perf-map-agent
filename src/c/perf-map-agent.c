@@ -338,9 +338,17 @@ jvmtiError set_callbacks(jvmtiEnv *jvmti) {
 }
 
 JNIEXPORT jint JNICALL
+Agent_OnLoad(JavaVM *vm, char *options, void *reserved) {
+    return Agent_OnAttach(vm, options, reserved);
+}
+
+JNIEXPORT jint JNICALL
 Agent_OnAttach(JavaVM *vm, char *options, void *reserved) {
     open_map_file();
 
+    if (options == NULL) {
+        options = "";
+    }
     unfold_simple = strstr(options, "unfoldsimple") != NULL;
     unfold_all = strstr(options, "unfoldall") != NULL;
     unfold_inlined_methods = strstr(options, "unfold") != NULL || unfold_simple || unfold_all;
@@ -362,9 +370,11 @@ Agent_OnAttach(JavaVM *vm, char *options, void *reserved) {
     set_notification_mode(jvmti, JVMTI_ENABLE);
     (*jvmti)->GenerateEvents(jvmti, JVMTI_EVENT_DYNAMIC_CODE_GENERATED);
     (*jvmti)->GenerateEvents(jvmti, JVMTI_EVENT_COMPILED_METHOD_LOAD);
-    set_notification_mode(jvmti, JVMTI_DISABLE);
-    close_map_file();
 
     return 0;
 }
 
+JNIEXPORT void JNICALL
+Agent_OnUnload(JavaVM* vm) {
+    close_map_file();
+}
